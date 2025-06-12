@@ -21,11 +21,11 @@ definitions:
         items:
           $ref: '#/definitions/domain.AdminPayslipSummary'
         type: array
-      periodID:
+      period_id:
         type: integer
-      totalEmployees:
+      total_employees:
         type: integer
-      totalPayout:
+      total_payout:
         type: number
     type: object
   domain.Payslip:
@@ -103,6 +103,10 @@ paths:
       - application/json
       description: Digunakan oleh employee untuk submit kehadiran berdasarkan tanggal
       parameters:
+      - description: Unique request ID
+        in: header
+        name: X-Request-ID
+        type: string
       - description: Tanggal kehadiran (format YYYY-MM-DD)
         in: body
         name: body
@@ -166,6 +170,10 @@ paths:
       description: Digunakan oleh employee untuk mencatat lembur berdasarkan tanggal
         dan jumlah jam
       parameters:
+      - description: Unique request ID
+        in: header
+        name: X-Request-ID
+        type: string
       - description: Tanggal lembur dan jumlah jam lembur
         in: body
         name: body
@@ -199,6 +207,10 @@ paths:
       description: Hanya dapat dijalankan oleh admin untuk memproses payroll berdasarkan
         rentang tanggal
       parameters:
+      - description: Unique request ID
+        in: header
+        name: X-Request-ID
+        type: string
       - description: Tanggal mulai dan akhir payroll
         in: body
         name: body
@@ -257,6 +269,10 @@ paths:
       description: Digunakan oleh employee untuk mengajukan reimbursement berdasarkan
         tanggal, jumlah dan deskripsi
       parameters:
+      - description: Unique request ID
+        in: header
+        name: X-Request-ID
+        type: string
       - description: Data reimbursement (tanggal, jumlah, deskripsi)
         in: body
         name: body

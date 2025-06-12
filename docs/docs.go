@@ -35,6 +35,12 @@ const docTemplate = `{
                 "summary": "Submit kehadiran harian",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Unique request ID",
+                        "name": "X-Request-ID",
+                        "in": "header"
+                    },
+                    {
                         "description": "Tanggal kehadiran (format YYYY-MM-DD)",
                         "name": "body",
                         "in": "body",
@@ -132,6 +138,12 @@ const docTemplate = `{
                 "summary": "Submit lembur",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "Unique request ID",
+                        "name": "X-Request-ID",
+                        "in": "header"
+                    },
+                    {
                         "description": "Tanggal lembur dan jumlah jam lembur",
                         "name": "body",
                         "in": "body",
@@ -182,6 +194,12 @@ const docTemplate = `{
                 ],
                 "summary": "Jalankan proses payroll untuk semua karyawan",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Unique request ID",
+                        "name": "X-Request-ID",
+                        "in": "header"
+                    },
                     {
                         "description": "Tanggal mulai dan akhir payroll",
                         "name": "body",
@@ -273,6 +291,12 @@ const docTemplate = `{
                 ],
                 "summary": "Submit reimbursement",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Unique request ID",
+                        "name": "X-Request-ID",
+                        "in": "header"
+                    },
                     {
                         "description": "Data reimbursement (tanggal, jumlah, deskripsi)",
                         "name": "body",
@@ -393,13 +417,13 @@ const docTemplate = `{
                         "$ref": "#/definitions/domain.AdminPayslipSummary"
                     }
                 },
-                "periodID": {
+                "period_id": {
                     "type": "integer"
                 },
-                "totalEmployees": {
+                "total_employees": {
                     "type": "integer"
                 },
-                "totalPayout": {
+                "total_payout": {
                     "type": "number"
                 }
             }

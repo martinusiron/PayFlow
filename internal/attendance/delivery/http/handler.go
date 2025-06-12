@@ -31,6 +31,7 @@ type SubmitAttendanceRequest struct {
 // @Tags Attendance
 // @Accept json
 // @Produce json
+// @Param X-Request-ID header string false "Unique request ID"
 // @Security BearerAuth
 // @Param body body SubmitAttendanceRequest true "Tanggal kehadiran (format YYYY-MM-DD)"
 // @Success 201 {string} string "created"

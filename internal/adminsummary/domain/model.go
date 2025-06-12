@@ -7,8 +7,8 @@ type AdminPayslipSummary struct {
 }
 
 type FullSummary struct {
-	PeriodID       int
-	TotalEmployees int
-	TotalPayout    float64
-	Details        []AdminPayslipSummary
+	PeriodID       int                   `json:"period_id"`
+	TotalEmployees int                   `json:"total_employees"`
+	TotalPayout    float64               `json:"total_payout"`
+	Details        []AdminPayslipSummary `json:"details"`
 }

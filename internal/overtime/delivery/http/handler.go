@@ -29,6 +29,7 @@ type SubmitOvertimeRequest struct {
 // @Tags Overtime
 // @Accept json
 // @Produce json
+// @Param X-Request-ID header string false "Unique request ID"
 // @Security BearerAuth
 // @Param body body SubmitOvertimeRequest true "Tanggal lembur dan jumlah jam lembur"
 // @Success 201 {string} string "created"

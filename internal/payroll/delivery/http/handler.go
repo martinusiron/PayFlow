@@ -28,6 +28,7 @@ type RunPayrollRequest struct {
 // @Tags Payroll
 // @Accept json
 // @Produce json
+// @Param X-Request-ID header string false "Unique request ID"
 // @Security BearerAuth
 // @Param body body RunPayrollRequest true "Tanggal mulai dan akhir payroll"
 // @Success 201 {string} string "created"

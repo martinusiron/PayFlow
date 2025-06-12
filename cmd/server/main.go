@@ -124,10 +124,8 @@ func main() {
 	// ===== Routing =====
 	mux := http.NewServeMux()
 
-	// === Auth routes (no middleware) ===
 	mux.HandleFunc("/api/auth/login", authHandler.Login)
 
-	// === Protected Routes ===
 	// employee
 	mux.Handle("/api/attendance/submit", authMiddleware.JWTAuth(http.HandlerFunc(attHandler.SubmitAttendance)))
 	mux.Handle("/api/overtime/submit", authMiddleware.JWTAuth(http.HandlerFunc(otHandler.SubmitOvertime)))
