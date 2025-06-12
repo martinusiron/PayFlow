@@ -7,7 +7,7 @@ import (
 	"math/rand"
 
 	"github.com/martinusiron/PayFlow/internal/user/domain"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/martinusiron/PayFlow/pkg/utils"
 )
 
 type userRepository struct {
@@ -83,7 +83,7 @@ func (r *userRepository) SeedIfEmpty(ctx context.Context) error {
 
 	for i := 1; i <= 100; i++ {
 		username := fmt.Sprintf("employee%d", i)
-		password := hashPassword(fmt.Sprintf("pass%d", i))
+		password := utils.HashPassword(fmt.Sprintf("pass%d", i))
 		salary := rand.Intn(3000000) + 2000000
 		_, err := r.db.ExecContext(ctx, `
 			INSERT INTO users (username, password, role, salary)
@@ -93,7 +93,7 @@ func (r *userRepository) SeedIfEmpty(ctx context.Context) error {
 		}
 	}
 
-	adminPass := hashPassword("admin123")
+	adminPass := utils.HashPassword("admin123")
 	_, err = r.db.ExecContext(ctx, `
 		INSERT INTO users (username, password, role, salary)
 		VALUES ('admin', $1, 'admin', 10000000)`, adminPass)
@@ -103,9 +103,4 @@ func (r *userRepository) SeedIfEmpty(ctx context.Context) error {
 
 	fmt.Println("Seeded 100 employees and 1 admin successfully.")
 	return nil
-}
-
-func hashPassword(pw string) string {
-	hash, _ := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
-	return string(hash)
 }

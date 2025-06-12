@@ -7,28 +7,36 @@ import (
 
 	"github.com/martinusiron/PayFlow/internal/attendance/usecase"
 	"github.com/martinusiron/PayFlow/internal/middleware"
-	"github.com/martinusiron/PayFlow/internal/shared"
 	mdl "github.com/martinusiron/PayFlow/pkg/middleware"
 )
 
 type AttendanceHandler struct {
 	Usecase *usecase.AttendanceUsecase
-	Shared  *shared.Service
 }
 
 func NewAttendanceHandlerr(
-	uc *usecase.AttendanceUsecase,
-	shared *shared.Service) *AttendanceHandler {
+	uc *usecase.AttendanceUsecase) *AttendanceHandler {
 	return &AttendanceHandler{
 		Usecase: uc,
-		Shared:  shared,
 	}
 }
 
 type SubmitAttendanceRequest struct {
-	Date string `json:"date"` // e.g. "2025-06-10"
+	Date string `json:"date" example:"2025-06-10"`
 }
 
+// SubmitAttendance godoc
+// @Summary Submit kehadiran harian
+// @Description Digunakan oleh employee untuk submit kehadiran berdasarkan tanggal
+// @Tags Attendance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body SubmitAttendanceRequest true "Tanggal kehadiran (format YYYY-MM-DD)"
+// @Success 201 {string} string "created"
+// @Failure 400 {string} string "invalid body / invalid date format / other errors"
+// @Failure 401 {string} string "unauthorized"
+// @Router /api/attendance/submit [post]
 func (h *AttendanceHandler) SubmitAttendance(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var req SubmitAttendanceRequest
@@ -43,8 +51,14 @@ func (h *AttendanceHandler) SubmitAttendance(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	userID := middleware.ExtractUserID(ctx)
-	if userID == 0 {
+	role := middleware.ExtractRole(ctx)
+	if role != "employee" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	userID, ok := middleware.ExtractUserID(ctx)
+	if !ok || userID == 0 {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -57,5 +71,6 @@ func (h *AttendanceHandler) SubmitAttendance(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 }

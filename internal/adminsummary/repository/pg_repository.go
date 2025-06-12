@@ -17,10 +17,10 @@ func NewAdminSummaryRepository(db *sql.DB) *adminSummaryRepository {
 
 func (r *adminSummaryRepository) GetSummaryByPayrollID(ctx context.Context, payrollID int) (*domain.FullSummary, error) {
 	rows, err := r.db.Query(`
-		SELECT u.id, u.name, p.total_take_home
-		FROM processed_payrolls p
+		SELECT u.id, u.username, p.total_amount
+		FROM payrolls p
 		JOIN users u ON p.user_id = u.id
-		WHERE p.payroll_id = $1`, payrollID)
+		WHERE p.payroll_period_id = $1`, payrollID)
 	if err != nil {
 		return nil, err
 	}

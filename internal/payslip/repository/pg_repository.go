@@ -19,10 +19,10 @@ func (r *payslipRepository) GetLatestPayslip(ctx context.Context, userID int) (*
 	var p domain.Payslip
 	err := r.db.QueryRow(`
 		SELECT user_id, base_salary, workdays_present, prorated_salary,
-		       overtime_hours, overtime_pay, reimbursements, total_take_home
-		FROM processed_payrolls
+		overtime_hours, overtime_amount, reimbursement_amount, total_amount
+		FROM payrolls
 		WHERE user_id = $1
-		ORDER BY payroll_id DESC LIMIT 1`, userID).Scan(
+		ORDER BY payroll_period_id DESC LIMIT 1`, userID).Scan(
 		&p.UserID, &p.BaseSalary, &p.WorkdaysPresent, &p.ProratedSalary,
 		&p.OvertimeHours, &p.OvertimePay, &p.Reimbursements, &p.TotalTakeHome,
 	)

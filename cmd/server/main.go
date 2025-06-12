@@ -1,3 +1,9 @@
+// @title PayFlow API
+// @version 1.0
+// @description API documentation for PayFlow
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 package main
 
 import (
@@ -93,7 +99,7 @@ func main() {
 
 	// ===== Usecases =====
 	auditUC := aluc.NewAuditLogUsecase(alRepo)
-	authUC := authuc.NewAuthUsecase(authRepo, jwtSecret)
+	authUC := authuc.NewAuthUsecase(authRepo, userRepo, jwtSecret)
 	sharedService := shared.NewService(auditUC, userRepo, attRepo, otRepo, rebRepo)
 
 	attUC := atuc.NewAttendanceUsecase(attRepo, auditUC)
@@ -105,7 +111,7 @@ func main() {
 
 	// ===== Handlers =====
 	authHandler := authdel.NewAuthHandler(authUC)
-	attHandler := atdel.NewAttendanceHandlerr(attUC, sharedService)
+	attHandler := atdel.NewAttendanceHandlerr(attUC)
 	otHandler := otdel.NewOvertimeHandler(otUC)
 	rebHandler := redel.NewReimbursementHandler(rebUC)
 	payHandler := paydel.NewPayrollHandler(payUC)
@@ -119,15 +125,17 @@ func main() {
 	mux := http.NewServeMux()
 
 	// === Auth routes (no middleware) ===
-	// mux.HandleFunc("/api/auth/signup", authHandler.Signup)
 	mux.HandleFunc("/api/auth/login", authHandler.Login)
 
 	// === Protected Routes ===
+	// employee
 	mux.Handle("/api/attendance/submit", authMiddleware.JWTAuth(http.HandlerFunc(attHandler.SubmitAttendance)))
 	mux.Handle("/api/overtime/submit", authMiddleware.JWTAuth(http.HandlerFunc(otHandler.SubmitOvertime)))
 	mux.Handle("/api/reimbursement/submit", authMiddleware.JWTAuth(http.HandlerFunc(rebHandler.SubmitReimbursement)))
-	mux.Handle("/api/payroll/run", authMiddleware.JWTAuth(http.HandlerFunc(payHandler.RunPayroll)))
 	mux.Handle("/api/payslip/get", authMiddleware.JWTAuth(http.HandlerFunc(psHandler.GetMyPayslips)))
+
+	// admin
+	mux.Handle("/api/payroll/run", authMiddleware.JWTAuth(http.HandlerFunc(payHandler.RunPayroll)))
 	mux.Handle("/api/summary/admin", authMiddleware.JWTAuth(http.HandlerFunc(asHandler.GenerateSummary)))
 
 	mux.Handle("/swagger/", httpSwagger.WrapHandler)

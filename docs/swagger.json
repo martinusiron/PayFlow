@@ -1,7 +1,501 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "API documentation for PayFlow",
+        "title": "PayFlow API",
+        "contact": {},
+        "version": "1.0"
     },
-    "paths": {}
+    "paths": {
+        "/api/attendance/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Digunakan oleh employee untuk submit kehadiran berdasarkan tanggal",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Attendance"
+                ],
+                "summary": "Submit kehadiran harian",
+                "parameters": [
+                    {
+                        "description": "Tanggal kehadiran (format YYYY-MM-DD)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SubmitAttendanceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body / invalid date format / other errors",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "description": "Autentikasi dengan username dan password",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login untuk mendapatkan token JWT",
+                "parameters": [
+                    {
+                        "description": "Login credentials",
+                        "name": "credentials",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.Credentials"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Token"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/overtime/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Digunakan oleh employee untuk mencatat lembur berdasarkan tanggal dan jumlah jam",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Overtime"
+                ],
+                "summary": "Submit lembur",
+                "parameters": [
+                    {
+                        "description": "Tanggal lembur dan jumlah jam lembur",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SubmitOvertimeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body / invalid date format / other errors",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payroll/run": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Hanya dapat dijalankan oleh admin untuk memproses payroll berdasarkan rentang tanggal",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payroll"
+                ],
+                "summary": "Jalankan proses payroll untuk semua karyawan",
+                "parameters": [
+                    {
+                        "description": "Tanggal mulai dan akhir payroll",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.RunPayrollRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid request body / processing error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/payslip/get": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil slip gaji terbaru berdasarkan user yang sedang login",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payslip"
+                ],
+                "summary": "Ambil slip gaji terakhir milik user",
+                "responses": {
+                    "200": {
+                        "description": "daftar payslip terbaru",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.Payslip"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/reimbursement/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Digunakan oleh employee untuk mengajukan reimbursement berdasarkan tanggal, jumlah dan deskripsi",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reimbursement"
+                ],
+                "summary": "Submit reimbursement",
+                "parameters": [
+                    {
+                        "description": "Data reimbursement (tanggal, jumlah, deskripsi)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.SubmitReimbursementRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "invalid body / invalid date format / other errors",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/summary/admin": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generate payroll summary for a given payroll_id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AdminSummary"
+                ],
+                "summary": "Get admin payroll summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Payroll ID",
+                        "name": "payroll_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/domain.FullSummary"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "invalid payroll_id",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "domain.AdminPayslipSummary": {
+            "type": "object",
+            "properties": {
+                "employeeName": {
+                    "type": "string"
+                },
+                "totalTakeHome": {
+                    "type": "number"
+                },
+                "userID": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.Credentials": {
+            "type": "object",
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.FullSummary": {
+            "type": "object",
+            "properties": {
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/domain.AdminPayslipSummary"
+                    }
+                },
+                "periodID": {
+                    "type": "integer"
+                },
+                "totalEmployees": {
+                    "type": "integer"
+                },
+                "totalPayout": {
+                    "type": "number"
+                }
+            }
+        },
+        "domain.Payslip": {
+            "type": "object",
+            "properties": {
+                "base_salary": {
+                    "type": "number"
+                },
+                "overtime_hours": {
+                    "type": "number"
+                },
+                "overtime_pay": {
+                    "type": "number"
+                },
+                "prorated_salary": {
+                    "type": "number"
+                },
+                "reimbursements": {
+                    "type": "number"
+                },
+                "total_take_home": {
+                    "type": "number"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "workdays_present": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.Token": {
+            "type": "object",
+            "properties": {
+                "accessToken": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "refreshToken": {
+                    "type": "string"
+                }
+            }
+        },
+        "http.RunPayrollRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string",
+                    "example": "2025-06-30"
+                },
+                "start_date": {
+                    "type": "string",
+                    "example": "2025-06-01"
+                }
+            }
+        },
+        "http.SubmitAttendanceRequest": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2025-06-10"
+                }
+            }
+        },
+        "http.SubmitOvertimeRequest": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2025-06-11"
+                },
+                "hours": {
+                    "type": "number",
+                    "example": 2.5
+                }
+            }
+        },
+        "http.SubmitReimbursementRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 1000000
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2025-06-12"
+                },
+                "description": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    }
 }

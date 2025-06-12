@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	ald "github.com/martinusiron/PayFlow/internal/auditlog/domain"
 	au "github.com/martinusiron/PayFlow/internal/auditlog/usecase"
 	"github.com/martinusiron/PayFlow/internal/reimbursement/domain"
 	"github.com/martinusiron/PayFlow/internal/reimbursement/repository"
@@ -34,5 +35,18 @@ func (u *ReimbursementUsecase) Submit(ctx context.Context, userID int, date time
 		IPAddress:   ip,
 		RequestID:   reqID,
 	}
-	return u.repo.SubmitReimbursement(ctx, rb)
+	id, err := u.repo.SubmitReimbursement(ctx, rb)
+	if err != nil {
+		return err
+	}
+
+	return u.AuditUsecase.Record(ctx, ald.AuditLog{
+		UserID:    userID,
+		TableName: "reimbursements",
+		Action:    "submit",
+		RecordID:  id,
+		IPAddress: ip,
+		RequestID: reqID,
+		CreatedAt: time.Now(),
+	})
 }

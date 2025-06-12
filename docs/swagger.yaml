@@ -1,4 +1,324 @@
+definitions:
+  domain.AdminPayslipSummary:
+    properties:
+      employeeName:
+        type: string
+      totalTakeHome:
+        type: number
+      userID:
+        type: integer
+    type: object
+  domain.Credentials:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  domain.FullSummary:
+    properties:
+      details:
+        items:
+          $ref: '#/definitions/domain.AdminPayslipSummary'
+        type: array
+      periodID:
+        type: integer
+      totalEmployees:
+        type: integer
+      totalPayout:
+        type: number
+    type: object
+  domain.Payslip:
+    properties:
+      base_salary:
+        type: number
+      overtime_hours:
+        type: number
+      overtime_pay:
+        type: number
+      prorated_salary:
+        type: number
+      reimbursements:
+        type: number
+      total_take_home:
+        type: number
+      user_id:
+        type: integer
+      workdays_present:
+        type: integer
+    type: object
+  domain.Token:
+    properties:
+      accessToken:
+        type: string
+      expiresAt:
+        type: string
+      refreshToken:
+        type: string
+    type: object
+  http.RunPayrollRequest:
+    properties:
+      end_date:
+        example: "2025-06-30"
+        type: string
+      start_date:
+        example: "2025-06-01"
+        type: string
+    type: object
+  http.SubmitAttendanceRequest:
+    properties:
+      date:
+        example: "2025-06-10"
+        type: string
+    type: object
+  http.SubmitOvertimeRequest:
+    properties:
+      date:
+        example: "2025-06-11"
+        type: string
+      hours:
+        example: 2.5
+        type: number
+    type: object
+  http.SubmitReimbursementRequest:
+    properties:
+      amount:
+        example: 1000000
+        type: number
+      date:
+        example: "2025-06-12"
+        type: string
+      description:
+        type: string
+    type: object
 info:
   contact: {}
-paths: {}
+  description: API documentation for PayFlow
+  title: PayFlow API
+  version: "1.0"
+paths:
+  /api/attendance/submit:
+    post:
+      consumes:
+      - application/json
+      description: Digunakan oleh employee untuk submit kehadiran berdasarkan tanggal
+      parameters:
+      - description: Tanggal kehadiran (format YYYY-MM-DD)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.SubmitAttendanceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            type: string
+        "400":
+          description: invalid body / invalid date format / other errors
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Submit kehadiran harian
+      tags:
+      - Attendance
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Autentikasi dengan username dan password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Credentials'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Token'
+        "400":
+          description: invalid body
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+      summary: Login untuk mendapatkan token JWT
+      tags:
+      - Auth
+  /api/overtime/submit:
+    post:
+      consumes:
+      - application/json
+      description: Digunakan oleh employee untuk mencatat lembur berdasarkan tanggal
+        dan jumlah jam
+      parameters:
+      - description: Tanggal lembur dan jumlah jam lembur
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.SubmitOvertimeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            type: string
+        "400":
+          description: invalid body / invalid date format / other errors
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Submit lembur
+      tags:
+      - Overtime
+  /api/payroll/run:
+    post:
+      consumes:
+      - application/json
+      description: Hanya dapat dijalankan oleh admin untuk memproses payroll berdasarkan
+        rentang tanggal
+      parameters:
+      - description: Tanggal mulai dan akhir payroll
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.RunPayrollRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            type: string
+        "400":
+          description: invalid request body / processing error
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Jalankan proses payroll untuk semua karyawan
+      tags:
+      - Payroll
+  /api/payslip/get:
+    get:
+      description: Mengambil slip gaji terbaru berdasarkan user yang sedang login
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: daftar payslip terbaru
+          schema:
+            items:
+              $ref: '#/definitions/domain.Payslip'
+            type: array
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Ambil slip gaji terakhir milik user
+      tags:
+      - Payslip
+  /api/reimbursement/submit:
+    post:
+      consumes:
+      - application/json
+      description: Digunakan oleh employee untuk mengajukan reimbursement berdasarkan
+        tanggal, jumlah dan deskripsi
+      parameters:
+      - description: Data reimbursement (tanggal, jumlah, deskripsi)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/http.SubmitReimbursementRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: created
+          schema:
+            type: string
+        "400":
+          description: invalid body / invalid date format / other errors
+          schema:
+            type: string
+        "401":
+          description: unauthorized
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Submit reimbursement
+      tags:
+      - Reimbursement
+  /api/summary/admin:
+    get:
+      consumes:
+      - application/json
+      description: Generate payroll summary for a given payroll_id
+      parameters:
+      - description: Payroll ID
+        in: query
+        name: payroll_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.FullSummary'
+            type: array
+        "400":
+          description: invalid payroll_id
+          schema:
+            type: string
+        "500":
+          description: internal server error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get admin payroll summary
+      tags:
+      - AdminSummary
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

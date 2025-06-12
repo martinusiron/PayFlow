@@ -37,7 +37,7 @@ func TestRunPayroll_Success(t *testing.T) {
 			TotalTakeHome:   5438094,
 		},
 	}, nil)
-	repo.On("MarkAsProcessed", ctx, 1, mock.Anything).Return(nil)
+	repo.On("MarkAsProcessed", ctx, 1, mock.Anything, 1, "127.0.0.1", "req-xyz").Return(nil)
 
 	err := uc.RunPayroll(ctx, start, end, 1, "127.0.0.1", "req-xyz")
 	assert.NoError(t, err)

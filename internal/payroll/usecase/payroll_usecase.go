@@ -49,9 +49,5 @@ func (u *PayrollUsecase) RunPayroll(ctx context.Context, start, end string, admi
 		return err
 	}
 
-	for i := range records {
-		records[i].PayrollID = payrollID
-	}
-
-	return u.repo.MarkAsProcessed(ctx, payrollID, records)
+	return u.repo.MarkAsProcessed(ctx, payrollID, records, adminID, ip, reqID)
 }

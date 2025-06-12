@@ -5,15 +5,18 @@ import (
 	"testing"
 	"time"
 
+	ald "github.com/martinusiron/PayFlow/internal/auditlog/domain"
 	"github.com/martinusiron/PayFlow/internal/mocks"
 	"github.com/martinusiron/PayFlow/internal/reimbursement/domain"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestSubmitReimbursement_Success(t *testing.T) {
 	mockRepo := new(mocks.ReimbursementRepository)
 	mockAudit := new(mocks.AuditLogService)
 	uc := NewReimbursementUsecase(mockRepo, mockAudit)
+	ctx := context.Background()
 
 	date := time.Now()
 	amount := 150.75
@@ -30,10 +33,22 @@ func TestSubmitReimbursement_Success(t *testing.T) {
 		CreatedBy:   userID,
 		IPAddress:   ip,
 		RequestID:   reqID,
-	}).Return(nil)
+	}).Return(1, nil)
 
-	err := uc.Submit(context.Background(), userID, date, amount, desc, userID, ip, reqID)
+	mockAudit.On("Record", ctx, mock.MatchedBy(func(log ald.AuditLog) bool {
+		return log.TableName == "reimbursements" &&
+			log.Action == "submit" &&
+			log.RecordID == 1 &&
+			log.UserID == userID &&
+			log.IPAddress == ip &&
+			log.RequestID == reqID
+	})).Return(nil)
+
+	err := uc.Submit(ctx, userID, date, amount, desc, userID, ip, reqID)
 	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockAudit.AssertExpectations(t)
 }
 
 func TestSubmitReimbursement_ZeroAmount(t *testing.T) {

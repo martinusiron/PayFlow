@@ -8,6 +8,6 @@ import (
 )
 
 type OvertimeRepository interface {
-	SubmitOvertime(ctx context.Context, ot domain.Overtime) error
+	SubmitOvertime(ctx context.Context, ot domain.Overtime) (int, error)
 	GetOvertimeByUser(ctx context.Context, userID int, start, end time.Time) ([]domain.Overtime, error)
 }

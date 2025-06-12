@@ -16,13 +16,15 @@ func NewAttendanceRepository(db *sql.DB) *attendanceRepository {
 	return &attendanceRepository{db}
 }
 
-func (r *attendanceRepository) SubmitAttendance(ctx context.Context, att domain.Attendance) error {
-	_, err := r.db.Exec(`
+func (r *attendanceRepository) SubmitAttendance(ctx context.Context, att domain.Attendance) (int, error) {
+	var id int
+	err := r.db.QueryRow(`
 		INSERT INTO attendance (user_id, attendance_date, created_by, ip_address, request_id)
 		VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT (user_id, attendance_date) DO NOTHING`,
-		att.UserID, att.Date, att.CreatedBy, att.IPAddress, att.RequestID)
-	return err
+		ON CONFLICT (user_id, attendance_date) DO NOTHING
+		RETURNING id`,
+		att.UserID, att.Date, att.CreatedBy, att.IPAddress, att.RequestID).Scan(&id)
+	return id, err
 }
 
 func (r *attendanceRepository) GetAttendanceByUser(ctx context.Context, userID int, start, end string) ([]domain.Attendance, error) {

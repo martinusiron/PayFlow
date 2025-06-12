@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	ald "github.com/martinusiron/PayFlow/internal/auditlog/domain"
 	au "github.com/martinusiron/PayFlow/internal/auditlog/usecase"
 	"github.com/martinusiron/PayFlow/internal/overtime/domain"
 	"github.com/martinusiron/PayFlow/internal/overtime/repository"
@@ -36,5 +37,18 @@ func (u *OvertimeUsecase) Submit(ctx context.Context, userID int, date time.Time
 		IPAddress: ip,
 		RequestID: reqID,
 	}
-	return u.repo.SubmitOvertime(ctx, ot)
+	id, err := u.repo.SubmitOvertime(ctx, ot)
+	if err != nil {
+		return err
+	}
+
+	return u.AuditUsecase.Record(ctx, ald.AuditLog{
+		UserID:    userID,
+		TableName: "overtimes",
+		Action:    "submit",
+		RecordID:  id,
+		IPAddress: ip,
+		RequestID: reqID,
+		CreatedAt: time.Now(),
+	})
 }

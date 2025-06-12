@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/martinusiron/PayFlow/internal/attendance/domain"
+	ald "github.com/martinusiron/PayFlow/internal/auditlog/domain"
 	"github.com/martinusiron/PayFlow/internal/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestSubmitAttendance(t *testing.T) {
@@ -27,10 +29,22 @@ func TestSubmitAttendance(t *testing.T) {
 		CreatedBy: userID,
 		IPAddress: ip,
 		RequestID: reqID,
-	}).Return(nil)
+	}).Return(1, nil)
+
+	mockAudit.On("Record", ctx, mock.MatchedBy(func(log ald.AuditLog) bool {
+		return log.TableName == "attendances" &&
+			log.Action == "submit" &&
+			log.RecordID == 1 &&
+			log.UserID == userID &&
+			log.IPAddress == ip &&
+			log.RequestID == reqID
+	})).Return(nil)
 
 	err := uc.Submit(ctx, userID, date, userID, ip, reqID)
 	assert.NoError(t, err)
+
+	mockRepo.AssertExpectations(t)
+	mockAudit.AssertExpectations(t)
 }
 
 func TestWeekendAttendance(t *testing.T) {

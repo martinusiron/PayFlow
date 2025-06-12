@@ -7,6 +7,7 @@ import (
 
 	"github.com/martinusiron/PayFlow/internal/attendance/domain"
 	"github.com/martinusiron/PayFlow/internal/attendance/repository"
+	ald "github.com/martinusiron/PayFlow/internal/auditlog/domain"
 	au "github.com/martinusiron/PayFlow/internal/auditlog/usecase"
 )
 
@@ -32,5 +33,19 @@ func (u *AttendanceUsecase) Submit(ctx context.Context, userID int, date time.Ti
 		IPAddress: ip,
 		RequestID: reqID,
 	}
-	return u.repo.SubmitAttendance(ctx, att)
+	id, err := u.repo.SubmitAttendance(ctx, att)
+	if err != nil {
+		return err
+	}
+
+	return u.AuditUsecase.Record(ctx, ald.AuditLog{
+		UserID:    userID,
+		TableName: "attendances",
+		Action:    "submit",
+		RecordID:  id,
+		IPAddress: ip,
+		RequestID: reqID,
+		CreatedAt: time.Now(),
+	})
+
 }

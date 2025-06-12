@@ -3,67 +3,92 @@ package usecase
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/martinusiron/PayFlow/internal/auth/domain"
 	"github.com/martinusiron/PayFlow/internal/auth/repository"
-	"golang.org/x/crypto/bcrypt"
+	ur "github.com/martinusiron/PayFlow/internal/user/repository"
+	"github.com/martinusiron/PayFlow/pkg/utils"
 )
 
 type AuthUsecase struct {
-	repo      repository.AuthRepository
+	authRepo  repository.AuthRepository
+	userRepo  ur.UserRepository
 	jwtSecret string
 }
 
-func NewAuthUsecase(repo repository.AuthRepository, jwtSecret string) *AuthUsecase {
-	return &AuthUsecase{repo: repo, jwtSecret: jwtSecret}
+func NewAuthUsecase(
+	authRepo repository.AuthRepository,
+	userRepo ur.UserRepository,
+	jwtSecret string) *AuthUsecase {
+	return &AuthUsecase{
+		authRepo:  authRepo,
+		userRepo:  userRepo,
+		jwtSecret: jwtSecret,
+	}
 }
 
 func (u *AuthUsecase) Login(ctx context.Context, creds domain.Credentials) (*domain.Token, error) {
-	hash, err := u.repo.GetPasswordHash(ctx, creds.Username)
+	hash, err := u.authRepo.GetPasswordHash(ctx, creds.Username)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("Hash from DB:", hash)
-	fmt.Println("Input password:", creds.Password)
-
-	if bcrypt.CompareHashAndPassword([]byte(hash), []byte(creds.Password)) != nil {
+	inputHash := utils.HashPassword(creds.Password)
+	if inputHash != hash {
 		return nil, errors.New("invalid credentials")
 	}
+
+	user, err := u.userRepo.GetByUsername(ctx, creds.Username)
+	if err != nil {
+		return nil, errors.New("user not found")
+	}
+
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"username": creds.Username,
+		"user_id":  user.ID,
+		"role":     user.Role,
 		"exp":      time.Now().Add(15 * time.Minute).Unix(),
 	})
-	accessToken, err := at.SignedString(u.jwtSecret)
+
+	accessToken, err := at.SignedString([]byte(u.jwtSecret))
 	if err != nil {
 		return nil, err
 	}
-	token := &domain.Token{AccessToken: accessToken, ExpiresAt: time.Now().Add(15 * time.Minute)}
+
+	token := &domain.Token{
+		AccessToken: accessToken,
+		ExpiresAt:   time.Now().Add(60 * time.Minute),
+	}
 	return token, nil
 }
 
-func (u *AuthUsecase) VerifyAccessToken(ctx context.Context, tokenString string) (string, error) {
+func (u *AuthUsecase) VerifyAccessToken(ctx context.Context, tokenString string) (int, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
 		}
-		return u.jwtSecret, nil
+		return []byte(u.jwtSecret), nil
 	})
 
 	if err != nil {
-		return "", err
+		return 0, "", err
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		username, ok := claims["username"].(string)
+		userIDFloat, ok := claims["user_id"].(float64)
 		if !ok {
-			return "", errors.New("invalid claims")
+			return 0, "", errors.New("invalid user_id claim")
 		}
-		return username, nil
+
+		role, ok := claims["role"].(string)
+		if !ok {
+			return 0, "", errors.New("invalid role claim")
+		}
+
+		return int(userIDFloat), role, nil
 	}
 
-	return "", errors.New("invalid token")
+	return 0, "", errors.New("invalid token")
 }

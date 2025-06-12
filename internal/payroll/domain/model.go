@@ -14,7 +14,6 @@ type Payroll struct {
 }
 
 type ProcessedPayroll struct {
-	PayrollID       int
 	UserID          int
 	BaseSalary      float64
 	WorkdaysPresent int

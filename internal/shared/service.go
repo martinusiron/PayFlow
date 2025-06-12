@@ -2,12 +2,9 @@ package shared
 
 import (
 	"context"
-	"net/http"
-	"strconv"
 	"time"
 
 	ac "github.com/martinusiron/PayFlow/internal/attendance/repository"
-	ad "github.com/martinusiron/PayFlow/internal/auditlog/domain"
 	au "github.com/martinusiron/PayFlow/internal/auditlog/usecase"
 	od "github.com/martinusiron/PayFlow/internal/overtime/domain"
 	or "github.com/martinusiron/PayFlow/internal/overtime/repository"
@@ -15,7 +12,6 @@ import (
 	rd "github.com/martinusiron/PayFlow/internal/reimbursement/domain"
 	rr "github.com/martinusiron/PayFlow/internal/reimbursement/repository"
 	ur "github.com/martinusiron/PayFlow/internal/user/repository"
-	"github.com/martinusiron/PayFlow/pkg/middleware"
 )
 
 type Service struct {
@@ -46,30 +42,6 @@ func NewService(
 		OvertimeRepo:      overtimeRepo,
 		ReimbursementRepo: reimbursementRepo,
 	}
-}
-
-// Extract metadata from request (for logging/audit/tracing)
-func (s *Service) ExtractRequestContext(ctx context.Context, r *http.Request) RequestContext {
-	userIDStr := r.Header.Get("X-User-ID")
-	userID, _ := strconv.Atoi(userIDStr)
-	return RequestContext{
-		UserID:    userID,
-		RequestID: r.Header.Get("X-Request-ID"),
-		IPAddress: middleware.GetIPAddress(r),
-	}
-}
-
-// // Log to audit log table
-func (s *Service) LogAudit(ctx context.Context, userID int, action, table string, recordID int, requestID, ip string) {
-	_ = s.AuditUsecase.Record(ctx, ad.AuditLog{
-		UserID:    userID,
-		TableName: table,
-		Action:    action,
-		RecordID:  recordID,
-		IPAddress: ip,
-		RequestID: requestID,
-		CreatedAt: time.Now(),
-	})
 }
 
 func (s *Service) CalculateAllEmployees(ctx context.Context, start, end time.Time) ([]pd.ProcessedPayroll, error) {
@@ -106,16 +78,18 @@ func (s *Service) CalculateAllEmployees(ctx context.Context, start, end time.Tim
 			return nil, err
 		}
 
-		overtimeAmount := s.calculateOvertimeTotal(overtimes, user.Salary/176)
+		overtimeHours, overtimeAmount := s.calculateOvertimeTotal(overtimes, user.Salary/176)
 		reimbursementTotal := s.calculateReimbursementTotal(reimbursements)
 
 		summaries = append(summaries, pd.ProcessedPayroll{
-			UserID:         user.ID,
-			BaseSalary:     user.Salary,
-			ProratedSalary: prorated,
-			OvertimePay:    overtimeAmount,
-			Reimbursements: reimbursementTotal,
-			TotalTakeHome:  overtimeAmount + reimbursementTotal,
+			UserID:          user.ID,
+			BaseSalary:      user.Salary,
+			WorkdaysPresent: attendedDays,
+			ProratedSalary:  prorated,
+			OvertimeHours:   overtimeHours,
+			OvertimePay:     overtimeAmount,
+			Reimbursements:  reimbursementTotal,
+			TotalTakeHome:   prorated + overtimeAmount + reimbursementTotal,
 		})
 	}
 
@@ -133,12 +107,12 @@ func countWeekdays(start, end time.Time) int {
 	return count
 }
 
-func (s *Service) calculateOvertimeTotal(overtimes []od.Overtime, hourlyRate float64) float64 {
+func (s *Service) calculateOvertimeTotal(overtimes []od.Overtime, hourlyRate float64) (float64, float64) {
 	var totalHours float64
 	for _, ot := range overtimes {
 		totalHours += ot.Hours
 	}
-	return totalHours * hourlyRate * 2 // 2x multiplier for overtime
+	return totalHours, totalHours * hourlyRate * 2 // 2x multiplier for overtime
 }
 
 func (s *Service) calculateReimbursementTotal(reimbursements []rd.Reimbursement) float64 {

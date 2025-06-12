@@ -18,7 +18,10 @@ func NewAuthMiddleware(uc *usecase.AuthUsecase) *AuthMiddleware {
 
 type contextKey string
 
-const userIDKey contextKey = "user_id"
+const (
+	userIDKey contextKey = "user_id"
+	roleKey   contextKey = "role"
+)
 
 func (m *AuthMiddleware) JWTAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -28,18 +31,25 @@ func (m *AuthMiddleware) JWTAuth(next http.Handler) http.Handler {
 			return
 		}
 		token := strings.TrimPrefix(authHeader, "Bearer ")
-		userID, err := m.AuthUC.VerifyAccessToken(r.Context(), token)
+		userID, role, err := m.AuthUC.VerifyAccessToken(r.Context(), token)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 		ctx := context.WithValue(r.Context(), userIDKey, userID)
+		ctx = context.WithValue(ctx, roleKey, role)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 // ExtractUserID helper
-func ExtractUserID(ctx context.Context) int {
-	id, _ := ctx.Value(userIDKey).(int)
-	return id
+func ExtractUserID(ctx context.Context) (int, bool) {
+	id, ok := ctx.Value(userIDKey).(int)
+	return id, ok
+}
+
+func ExtractRole(ctx context.Context) string {
+	role, _ := ctx.Value(roleKey).(string)
+	return role
 }

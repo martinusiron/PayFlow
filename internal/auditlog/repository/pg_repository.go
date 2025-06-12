@@ -16,6 +16,7 @@ func NewAuditLogRepository(db *sql.DB) *auditLogRepo {
 }
 
 func (r *auditLogRepo) LogAction(ctx context.Context, log domain.AuditLog) error {
+
 	_, err := r.db.Exec(`
 		INSERT INTO audit_logs (table_name, action, record_id, user_id, ip_address, request_id, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, NOW())

@@ -8,7 +8,7 @@ import (
 )
 
 type AttendanceRepository interface {
-	SubmitAttendance(ctx context.Context, att domain.Attendance) error
+	SubmitAttendance(ctx context.Context, att domain.Attendance) (int, error)
 	GetAttendanceByUser(ctx context.Context, userID int, start, end string) ([]domain.Attendance, error)
 	CountWeekdaysByUserID(ctx context.Context, userID int, start, end time.Time) (int, error)
 }

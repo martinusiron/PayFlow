@@ -16,12 +16,14 @@ func NewReimbursementRepository(db *sql.DB) *reimbursementRepository {
 	return &reimbursementRepository{db}
 }
 
-func (r *reimbursementRepository) SubmitReimbursement(ctx context.Context, rb domain.Reimbursement) error {
-	_, err := r.db.Exec(`
+func (r *reimbursementRepository) SubmitReimbursement(ctx context.Context, rb domain.Reimbursement) (int, error) {
+	var id int
+	err := r.db.QueryRow(`
 		INSERT INTO reimbursements (user_id, reimbursement_date, amount, description, created_by, ip_address, request_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		rb.UserID, rb.Date, rb.Amount, rb.Description, rb.CreatedBy, rb.IPAddress, rb.RequestID)
-	return err
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id`,
+		rb.UserID, rb.Date, rb.Amount, rb.Description, rb.CreatedBy, rb.IPAddress, rb.RequestID).Scan(&id)
+	return id, err
 }
 
 func (r *reimbursementRepository) GetReimbursementsByUser(ctx context.Context, userID int, start, end time.Time) ([]domain.Reimbursement, error) {

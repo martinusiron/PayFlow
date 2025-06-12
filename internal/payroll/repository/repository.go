@@ -8,7 +8,6 @@ import (
 
 type PayrollRepository interface {
 	CreatePayroll(ctx context.Context, p domain.Payroll) (int, error)
-	MarkAsProcessed(ctx context.Context, payrollID int, details []domain.ProcessedPayroll) error
+	MarkAsProcessed(ctx context.Context, payrollID int, details []domain.ProcessedPayroll, adminID int, ip, reqID string) error
 	IsPayrollRun(ctx context.Context, start, end string) (bool, error)
-	GetProcessedPayrolls(ctx context.Context, payrollID int) ([]domain.ProcessedPayroll, error)
 }
