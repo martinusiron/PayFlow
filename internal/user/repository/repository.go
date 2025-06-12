@@ -11,4 +11,5 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id int) (*domain.User, error)
 	GetAllEmployees(ctx context.Context) ([]domain.User, error)
 	Create(ctx context.Context, user *domain.User) error
+	SeedIfEmpty(ctx context.Context) error
 }

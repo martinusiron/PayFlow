@@ -3,8 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"math/rand"
 
 	"github.com/martinusiron/PayFlow/internal/user/domain"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type userRepository struct {
@@ -65,4 +68,44 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 		user.CreatedBy, user.UpdatedBy, user.IPAddress, user.RequestID,
 	).Scan(&user.ID)
 	return err
+}
+
+func (r *userRepository) SeedIfEmpty(ctx context.Context) error {
+	var count int
+	err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		fmt.Println("Users already seeded.")
+		return nil
+	}
+
+	for i := 1; i <= 100; i++ {
+		username := fmt.Sprintf("employee%d", i)
+		password := hashPassword(fmt.Sprintf("pass%d", i))
+		salary := rand.Intn(3000000) + 2000000
+		_, err := r.db.ExecContext(ctx, `
+			INSERT INTO users (username, password, role, salary)
+			VALUES ($1, $2, 'employee', $3)`, username, password, salary)
+		if err != nil {
+			return err
+		}
+	}
+
+	adminPass := hashPassword("admin123")
+	_, err = r.db.ExecContext(ctx, `
+		INSERT INTO users (username, password, role, salary)
+		VALUES ('admin', $1, 'admin', 10000000)`, adminPass)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Seeded 100 employees and 1 admin successfully.")
+	return nil
+}
+
+func hashPassword(pw string) string {
+	hash, _ := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+	return string(hash)
 }

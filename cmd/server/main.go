@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	_ "github.com/martinusiron/PayFlow/docs"
 	"github.com/martinusiron/PayFlow/internal/middleware"
 
 	asdel "github.com/martinusiron/PayFlow/internal/adminsummary/delivery/http"
@@ -45,6 +48,7 @@ import (
 	authuc "github.com/martinusiron/PayFlow/internal/auth/usecase"
 
 	"github.com/martinusiron/PayFlow/internal/shared"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func main() {
@@ -59,10 +63,22 @@ func main() {
 		log.Fatal("DB_URL and JWT_SECRET must be set")
 	}
 
-	db, err := sql.Open("postgres", dbURL)
+	db, err := connectWithRetry(dbURL, 10, 3*time.Second)
 	if err != nil {
-		log.Fatal("Failed to connect to DB:", err)
+		log.Fatal(err)
 	}
+
+	schemaFile, err := os.ReadFile("migrations/schema.sql")
+	if err != nil {
+		log.Fatalf("Failed to read schema.sql: %v", err)
+	}
+
+	_, err = db.Exec(string(schemaFile))
+	if err != nil {
+		log.Fatalf("Failed to execute schema.sql: %v", err)
+	}
+
+	fmt.Println("Database schema created or already exists.")
 
 	// ===== Repositories =====
 	userRepo := userrepo.NewUserRepository(db)
@@ -114,13 +130,36 @@ func main() {
 	mux.Handle("/api/payslip/get", authMiddleware.JWTAuth(http.HandlerFunc(psHandler.GetMyPayslips)))
 	mux.Handle("/api/summary/admin", authMiddleware.JWTAuth(http.HandlerFunc(asHandler.GenerateSummary)))
 
-	// Swagger doc (optional static)
-	mux.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(http.Dir("./docs/swagger"))))
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
+
+	ctx := context.Background()
+	if err := userRepo.SeedIfEmpty(ctx); err != nil {
+		log.Fatal("Failed to seed users:", err)
+	}
+
 	fmt.Println("Server running at http://localhost:" + port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))
+}
+
+func connectWithRetry(dsn string, maxRetries int, delay time.Duration) (*sql.DB, error) {
+	var db *sql.DB
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		db, err = sql.Open("postgres", dsn)
+		if err == nil {
+			err = db.Ping()
+			if err == nil {
+				log.Println("Connected to database!")
+				return db, nil
+			}
+		}
+		log.Printf("DB not ready, retrying in %s... (%d/%d)\n", delay, i+1, maxRetries)
+		time.Sleep(delay)
+	}
+	return nil, fmt.Errorf("failed to connect to DB after %d retries: %w", maxRetries, err)
 }
